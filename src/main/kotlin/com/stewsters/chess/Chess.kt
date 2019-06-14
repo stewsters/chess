@@ -10,13 +10,29 @@ enum class Color {
     BLACK
 }
 
-enum class Rank(val whiteSymbol: Char, val blackSymbol: Char) {
-    PAWN('♙', '♟'),
-    KNIGHT('♘', '♞'),
-    BISHOP('♗', '♝'),
-    ROOK('♖', '♜'),
-    QUEEN('♕', '♛'),
-    KING('♔', '♚');
+enum class Rank(
+    val whiteSymbol: Char,
+    val blackSymbol: Char,
+    val validMoves: (board: ChessBoard, x: Int, y: Int) -> List<ChessBoard>
+) {
+    PAWN('♙', '♟', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    }),
+    KNIGHT('♘', '♞', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    }),
+    BISHOP('♗', '♝', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    }),
+    ROOK('♖', '♜', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    }),
+    QUEEN('♕', '♛', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    }),
+    KING('♔', '♚', { board: ChessBoard, x: Int, y: Int ->
+        listOf(board)
+    });
 }
 
 data class Piece(
@@ -36,25 +52,10 @@ val order = arrayOf(
 )
 
 
-class ChessBoard {
-
-    val board = Matrix2d<Piece?>(Vec2[8, 8]) { x, y -> null }
-
-    init {
-        (0 until 8).forEach { x ->
-            board[x, 1] = Piece(Rank.PAWN, Color.WHITE)
-            board[x, 0] = Piece(order[x], Color.WHITE)
-        }
-
-        (0 until 8).forEach { x ->
-            board[x, 6] = Piece(Rank.PAWN, Color.BLACK)
-            board[x, 7] = Piece(
-                order[order.size - (x + 1)],
-                Color.BLACK
-            )
-        }
-
-    }
+class ChessBoard(
+    val board: Matrix2d<Piece?>,
+    val turn: Color = Color.WHITE
+) {
 
     operator fun get(file: Char, rank: Int): Piece? = board[file.toInt() - 'a'.toInt(), rank - 1]
     operator fun set(file: Char, rank: Int, value: Piece) {
@@ -89,15 +90,47 @@ class ChessBoard {
         }
     }
 
+    fun winner(): Color? {
 
+    }
+
+
+}
+
+
+fun initialPos(): ChessBoard {
+    val board = Matrix2d<Piece?>(Vec2[8, 8]) { x, y -> null }
+    (0 until 8).forEach { x ->
+        board[x, 1] = Piece(Rank.PAWN, Color.WHITE)
+        board[x, 0] = Piece(order[x], Color.WHITE)
+    }
+
+    (0 until 8).forEach { x ->
+        board[x, 6] = Piece(Rank.PAWN, Color.BLACK)
+        board[x, 7] = Piece(
+            order[order.size - (x + 1)],
+            Color.BLACK
+        )
+    }
+    return ChessBoard(board, Color.WHITE)
 }
 
 fun main() {
     // null means no one is there
-    val board = ChessBoard()
+    val board = initialPos()
 
-    //board.moves('a', 2)
+    while (board.winner() == null) {
+        // current turn person finds all available moves,
 
+        // evaluates moves
+
+        // choose one and set the board
+
+//        board = choice
+        board.print()
+    }
+
+    println(board.winner())
 
     board.print()
 
