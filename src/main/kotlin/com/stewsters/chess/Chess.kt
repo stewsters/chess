@@ -5,32 +5,48 @@ import kaiju.math.Vec2
 
 // https://medium.freecodecamp.org/simple-chess-ai-step-by-step-1d55a9266977
 
-enum class Color {
-    WHITE,
-    BLACK
+//enum class Winner{
+//    WHITE,
+//    BLACK,
+//    DRAW
+//}
+
+
+enum class Color(val sign: Int) {
+
+
+    WHITE(1),
+    BLACK(-1);
 }
 
 enum class Rank(
     val whiteSymbol: Char,
     val blackSymbol: Char,
-    val validMoves: (board: ChessBoard, x: Int, y: Int) -> List<ChessBoard>
+    val pts: Int,
+    val validMoves: (board: ChessBoard, color: Color, x: Int, y: Int) -> List<ChessBoard>
 ) {
-    PAWN('♙', '♟', { board: ChessBoard, x: Int, y: Int ->
+    PAWN('♙', '♟', 10, { board: ChessBoard, color: Color, x: Int, y: Int ->
+
+        val moves = mutableListOf(
+            board.move(x, y, x, y + (color.sign))
+        )
+//        if(x)
+
+        moves
+    }),
+    KNIGHT('♘', '♞', 30, { board: ChessBoard, color: Color, x: Int, y: Int ->
         listOf(board)
     }),
-    KNIGHT('♘', '♞', { board: ChessBoard, x: Int, y: Int ->
+    BISHOP('♗', '♝', 30, { board: ChessBoard, color: Color, x: Int, y: Int ->
         listOf(board)
     }),
-    BISHOP('♗', '♝', { board: ChessBoard, x: Int, y: Int ->
+    ROOK('♖', '♜', 50, { board: ChessBoard, color: Color, x: Int, y: Int ->
         listOf(board)
     }),
-    ROOK('♖', '♜', { board: ChessBoard, x: Int, y: Int ->
+    QUEEN('♕', '♛', 90, { board: ChessBoard, color: Color, x: Int, y: Int ->
         listOf(board)
     }),
-    QUEEN('♕', '♛', { board: ChessBoard, x: Int, y: Int ->
-        listOf(board)
-    }),
-    KING('♔', '♚', { board: ChessBoard, x: Int, y: Int ->
+    KING('♔', '♚', 900, { board: ChessBoard, color: Color, x: Int, y: Int ->
         listOf(board)
     });
 }
@@ -83,18 +99,62 @@ class ChessBoard(
             }
             println()
         }
-        println()
         print("  ")
         for (x in (0 until 8)) {
             print(('a'.toInt() + x).toChar())
         }
+        println()
     }
 
     fun winner(): Color? {
+        var blackKing = false
+        var whiteKing = true
 
+        board.forEach {
+            if (it != null && it.rank == Rank.KING) {
+                when (it.color) {
+                    Color.BLACK -> blackKing = true
+                    Color.WHITE -> whiteKing = true
+                }
+            }
+        }
+
+        return if (!whiteKing)
+            Color.BLACK
+        else if (!blackKing)
+            Color.WHITE
+        else null
     }
 
+    fun getMoves(color: Color): List<ChessBoard> {
+        // TODO: map func
+        var moves = mutableListOf<ChessBoard>()
+        board.forEachIndexed { x, y, p ->
+            if (p == null || p.color != color) {
+                return@forEachIndexed
+            }
+            moves.addAll(p.rank.validMoves(this,p.color, x, y))
+        }
+        return moves
+    }
 
+    fun getScore(): Int = board.sumBy { peice: Piece? ->
+        if (peice == null)
+            return@sumBy 0
+
+        peice.rank.pts * if (peice.color == Color.WHITE) 1 else -1
+    }
+
+    fun move(startX: Int, startY: Int, endX: Int, endY: Int): ChessBoard {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+}
+
+private fun <T> Matrix2d<T>.sumBy(func: (T) -> Int): Int {
+    var accumulator = 0
+    this.forEach { accumulator += func(it) }
+    return accumulator
 }
 
 
@@ -117,17 +177,23 @@ fun initialPos(): ChessBoard {
 
 fun main() {
     // null means no one is there
-    val board = initialPos()
+    var board = initialPos()
 
     while (board.winner() == null) {
         // current turn person finds all available moves,
 
-        // evaluates moves
+        Color.values().forEach { color ->
 
-        // choose one and set the board
+            // evaluates moves
+            val moveList = board.getMoves(color)
 
-//        board = choice
-        board.print()
+            // choose one and set the board
+            board = moveList.maxBy { it.getScore() * if (color == Color.BLACK) -1 else 1 }!!
+            board.print()
+
+        }
+
+
     }
 
     println(board.winner())
