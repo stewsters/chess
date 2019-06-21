@@ -13,10 +13,10 @@ import kaiju.math.Vec2
 
 
 enum class Color(val sign: Int) {
-
-
     WHITE(1),
     BLACK(-1);
+
+    fun other(): Color = values()[(this.ordinal + 1) % 2]
 }
 
 enum class Rank(
@@ -27,27 +27,31 @@ enum class Rank(
 ) {
     PAWN('♙', '♟', 10, { board: ChessBoard, color: Color, x: Int, y: Int ->
 
+        val firstMove = (color==Color.WHITE && y == 6) || (color == Color.BLACK && y==1)
         val moves = mutableListOf(
             board.move(x, y, x, y + (color.sign))
         )
+        if(firstMove){
+            moves.add(board.move(x, y, x, y + 2*(color.sign)))
+        }
 //        if(x)
 
         moves
     }),
     KNIGHT('♘', '♞', 30, { board: ChessBoard, color: Color, x: Int, y: Int ->
-        listOf(board)
+        listOf()
     }),
     BISHOP('♗', '♝', 30, { board: ChessBoard, color: Color, x: Int, y: Int ->
-        listOf(board)
+        listOf()
     }),
     ROOK('♖', '♜', 50, { board: ChessBoard, color: Color, x: Int, y: Int ->
-        listOf(board)
+        listOf()
     }),
     QUEEN('♕', '♛', 90, { board: ChessBoard, color: Color, x: Int, y: Int ->
-        listOf(board)
+        listOf()
     }),
     KING('♔', '♚', 900, { board: ChessBoard, color: Color, x: Int, y: Int ->
-        listOf(board)
+        listOf()
     });
 }
 
@@ -133,23 +137,46 @@ class ChessBoard(
             if (p == null || p.color != color) {
                 return@forEachIndexed
             }
-            moves.addAll(p.rank.validMoves(this,p.color, x, y))
+            println("calculating moves for ${p.rank} ${p.color} $x $y")
+            moves.addAll(p.rank.validMoves(this, p.color, x, y))
         }
         return moves
     }
 
-    fun getScore(): Int = board.sumBy { peice: Piece? ->
-        if (peice == null)
+    fun getScore(): Int = board.sumBy { piece: Piece? ->
+        if (piece == null)
             return@sumBy 0
 
-        peice.rank.pts * if (peice.color == Color.WHITE) 1 else -1
+        piece.rank.pts * piece.color.sign //if (piece.color == Color.WHITE) 1 else -1
     }
 
     fun move(startX: Int, startY: Int, endX: Int, endY: Int): ChessBoard {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (!board.contains(endX, endY)) {
+            throw Exception("Invalid Move $startX $startY to $endX $endY")
+        }
+
+        val p = board[startX, startY]
+        return ChessBoard(
+            board.copy { x, y ->
+                if (x == startX && y == startY) {
+                    null
+                } else if (x == endX && y == endY) {
+                    p
+                } else {
+                    board[x, y]
+                }
+            },
+            turn.other()
+        )
+
     }
 
+
 }
+
+private fun Matrix2d<Piece?>.copy(getter: (x: Int, y: Int) -> Piece? = this::get): Matrix2d<Piece?> =
+    Matrix2d(this.getSize(), getter)
+
 
 private fun <T> Matrix2d<T>.sumBy(func: (T) -> Int): Int {
     var accumulator = 0
@@ -185,12 +212,13 @@ fun main() {
         Color.values().forEach { color ->
 
             // evaluates moves
-            val moveList = board.getMoves(color)
+            val moveList = board.getMoves(color).shuffled()
 
             // choose one and set the board
-            board = moveList.maxBy { it.getScore() * if (color == Color.BLACK) -1 else 1 }!!
+            board = moveList.maxBy { it.getScore() * color.sign}!!
             board.print()
 
+            println("$color finished")
         }
 
 
